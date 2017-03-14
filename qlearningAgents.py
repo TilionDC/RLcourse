@@ -73,7 +73,7 @@ class QLearningAgent(ReinforcementAgent):
           or the Q node value otherwise
         """
         "*** YOUR CODE HERE ***"
-        qvalue = self.qvalue.get([(state, action)], default=None)
+        qvalue = self.qvalue.get((state, action), None)
         # We haven't seen this state before
         if (qvalue == None):
             qvalue = 0
@@ -160,20 +160,19 @@ class QLearningAgent(ReinforcementAgent):
           it will be called on your behalf
         """
         "*** YOUR CODE HERE ***"
-        qvalue_current = self.qvalue.get((state, action), default=None)
+        qvalue_current = self.qvalue.get((state, action), None)
 
         # We haven't seen this state before
         if (qvalue_current == None):
             self.qvalue[(state, action)] = 0
             qvalue_current = 0
 
-
         next_best_action = self.getAction(nextState)
 
-        qvalue_next = self.qvalue.get((nextState, next_best_action), default=None)
+        qvalue_next = self.qvalue.get((nextState, next_best_action), None)
         if (qvalue_next == None):
             self.qvalue[(nextState, next_best_action)] = 0
-            next_best_action = 0
+            qvalue_next = 0
 
         delta = reward + (self.gamma * qvalue_next) - qvalue_current
         self.qvalue = qvalue_current + self.alpha * delta
