@@ -76,8 +76,7 @@ class QLearningAgent(ReinforcementAgent):
         qvalue = self.qvalue.get((state, action), None)
         # We haven't seen this state before
         if (qvalue == None):
-            qvalue = 0
-
+            qvalue = 0.0
         return qvalue
 
 
@@ -128,9 +127,6 @@ class QLearningAgent(ReinforcementAgent):
         return best_action
 
 
-
-
-
     def getAction(self, state):
         """
           Compute the action to take in the current state.  With
@@ -161,22 +157,25 @@ class QLearningAgent(ReinforcementAgent):
         """
         "*** YOUR CODE HERE ***"
         qvalue_current = self.qvalue.get((state, action), None)
-
+        print ("qvalue_current_before = " + str(qvalue_current))
         # We haven't seen this state before
         if (qvalue_current == None):
-            self.qvalue[(state, action)] = 0
-            qvalue_current = 0
+            self.qvalue[(state, action)] = 0.0
+            qvalue_current = 0.0
+        print ("qvalue_current = " + str(self.qvalue[(state, action)]))
 
         next_best_action = self.getAction(nextState)
 
         qvalue_next = self.qvalue.get((nextState, next_best_action), None)
+        print ("qvalue_next_before = " + str(qvalue_next))
         if (qvalue_next == None):
-            self.qvalue[(nextState, next_best_action)] = 0
-            qvalue_next = 0
+            self.qvalue[(nextState, next_best_action)] = 0.0
+            qvalue_next = 0.0
+        print ("qvalue_next = " + str(self.qvalue[(nextState, next_best_action)]))
 
         delta = reward + (self.gamma * qvalue_next) - qvalue_current
-        self.qvalue = qvalue_current + self.alpha * delta
-
+        self.qvalue[(state, action)] = qvalue_current + self.alpha * delta
+        print ("update = " + str(self.qvalue[(nextState, next_best_action)]))
 
     def getPolicy(self, state):
         return self.computeActionFromQValues(state)
