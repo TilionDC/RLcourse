@@ -14,8 +14,9 @@
 
 from game import *
 from learningAgents import ReinforcementAgent
-import random
 from featureExtractors import *
+
+import numpy as np
 
 import random,util,math
 
@@ -72,14 +73,15 @@ class QLearningAgent(ReinforcementAgent):
           terminal state, you should return a value of 0.0.
         """
         "*** YOUR CODE HERE ***"
-        best_qvalue = 0.0
+        best_qvalue = -99990
         # Best action(s) list
         for pair in self.qvalue:
             if (pair[0] == state):
                 action = pair[1]
                 if(self.getQValue(state, action) > best_qvalue):
                     best_qvalue = self.getQValue(state, action)
-
+        if (best_qvalue == -99990):
+            best_qvalue = 0.0
         return best_qvalue
 
 
@@ -91,11 +93,11 @@ class QLearningAgent(ReinforcementAgent):
         """
         "*** YOUR CODE HERE ***"
         legalActions = self.getLegalActions(state)
-        best_qvalue = 0
+        best_qvalue = -999999
         best_actions = []
         best_action = None
 
-        if(len(legalActions) == 0):
+        if not legalActions:
             best_action = None
 
         else:
@@ -132,11 +134,11 @@ class QLearningAgent(ReinforcementAgent):
         action = None
 
         "*** YOUR CODE HERE ***"
-        if not util.flipCoin(self.epsilon):
-            action = self.computeActionFromQValues(state)
+        if not legalActions:
+            action = None
         else:
-            if (len(legalActions) == 0):
-                action = None
+            if not util.flipCoin(self.epsilon):
+                action = self.computeActionFromQValues(state)
             else:
                 action = random.choice(legalActions)
         return action
@@ -152,19 +154,19 @@ class QLearningAgent(ReinforcementAgent):
         """
         "*** YOUR CODE HERE ***"
         qvalue_current = self.qvalue.get((state, action), None)
-        print ("qvalue_current_before = " + str(qvalue_current))
+        # print ("qvalue_current_before = " + str(qvalue_current))
         # We haven't seen this state before
         if (qvalue_current == None):
             self.qvalue[(state, action)] = 0.0
             qvalue_current = 0.0
-        print ("qvalue_current = " + str(self.qvalue[(state, action)]))
+        # print ("qvalue_current = " + str(self.qvalue[(state, action)]))
 
         qvalue_next = self.computeValueFromQValues(nextState)
-        print ("qvalue_next = " + str(qvalue_next))
+        # print ("qvalue_next = " + str(qvalue_next))
 
         delta = reward + (self.gamma * qvalue_next) - qvalue_current
         self.qvalue[(state, action)] = qvalue_current + self.alpha * delta
-        print ("update = " + str(self.qvalue[(state, action)]))
+        # print ("update = " + str(self.qvalue[(state, action)]))
 
     def getPolicy(self, state):
         return self.computeActionFromQValues(state)
@@ -227,14 +229,37 @@ class ApproximateQAgent(PacmanQAgent):
           where * is the dotProduct operator
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        features = self.featExtractor.getFeatures(state, action)
+        qvalue = np.dot(self.weights, features)
+        return qvalue
+
+    def computeValueFromQValues(self, state):
+        legalAction = self.getLegalActions(state)
+        best_qvalue = -999999
+        for action in legalAction:
+            qvalue = self.getQValue(state, action)
+            if (qvalue > best_qvalue):
+                best_qvalue = qvalue
+        if (best_qvalue == -999999):
+            best_qvalue = 0.0
+        return best_qvalue
+
 
     def update(self, state, action, nextState, reward):
         """
            Should update your weights based on transition
         """
-        "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        delta = reward + (self.gamma * self.computeValueFromQValues(nextState)) - self.getQValue(state, action)
+        features = self.featExtractor.getFeatures(state, action)
+        for key in features.keys():
+            value = features[key]
+            if(key == "#-of-ghosts-1-step-away"):
+                if (value != 0.0):
+                    print ("feature \t" + str(key) + "\t" + str(value))
+                    print ("current weights \t " + str(self.weights[key]))
+                    print ("updated weights \t " + str(self.weights[key] + self.alpha * delta * value) + "\n")
+            self.weights[key] = self.weights[key] + self.alpha * delta * value
+
 
     def final(self, state):
         "Called at the end of each game."

@@ -14,7 +14,7 @@
 
 "Feature extractors for Pacman game states"
 
-from game import Directions, Actions
+from game import Directions, Actions, Configuration
 import util
 
 class FeatureExtractor:
@@ -93,6 +93,14 @@ class SimpleExtractor(FeatureExtractor):
         # if there is no danger of ghosts then add the food feature
         if not features["#-of-ghosts-1-step-away"] and food[next_x][next_y]:
             features["eats-food"] = 1.0
+
+        # conf is only so that getPossibleActions(conf, walls) will get a conf.pos object
+        conf = Configuration((x + dx, y + dy), Directions.STOP)
+        possible_actions = Actions.getPossibleActions(conf, walls)
+        if (len(possible_actions) == 1):
+            features["dead-end"] = 1.0
+        else:
+            features["dead-end"] = 0.0
 
         dist = closestFood((next_x, next_y), food, walls)
         if dist is not None:
