@@ -52,11 +52,7 @@ class QLearningAgent(ReinforcementAgent):
 
         # Learning rate
         self.alpha = alpha
-
-        self.lamda = 0.5
-
-        self.qValue = util.Counter()
-        self.eTrace = util.Counter()
+        self.qvalue = {}
 
     def getQValue(self, state, action):
         """
@@ -65,9 +61,11 @@ class QLearningAgent(ReinforcementAgent):
           or the Q node value otherwise
         """
         "*** YOUR CODE HERE ***"
-
-        stateAction = (state, action)
-        return self.qValue[stateAction]
+        qvalue = self.qvalue.get((state, action), None)
+        # We haven't seen this state before
+        if (qvalue == None):
+            qvalue = 0.0
+        return qvalue
 
 
     def computeValueFromQValues(self, state):
@@ -78,12 +76,16 @@ class QLearningAgent(ReinforcementAgent):
           terminal state, you should return a value of 0.0.
         """
         "*** YOUR CODE HERE ***"
-        bestAction = self.computeActionFromQValues(state)
-        if bestAction is not None:
-            stateAction = (state, bestAction)
-            return self.qValue[stateAction]
-        else:
-            return 0.0
+        best_qvalue = -99990
+        # Best action(s) list
+        for pair in self.qvalue:
+            if (pair[0] == state):
+                action = pair[1]
+                if(self.getQValue(state, action) > best_qvalue):
+                    best_qvalue = self.getQValue(state, action)
+        if (best_qvalue == -99990):
+            best_qvalue = 0.0
+        return best_qvalue
 
 
     def computeActionFromQValues(self, state):
@@ -93,37 +95,29 @@ class QLearningAgent(ReinforcementAgent):
           you should return None.
         """
         "*** YOUR CODE HERE ***"
+        legalActions = self.getLegalActions(state)
+        best_qvalue = -999999
+        best_actions = []
+        best_action = None
 
-        # New 'local' qValue counter: action -> qvalue
-        qValues = util.Counter()
+        if not legalActions:
+            best_action = None
 
-        # If there are no legal action we return None
-        possibleActions = self.getLegalActions(state)
-        if possibleActions is None:
-            return None
+        else:
+            for action in legalActions:
+                if (self.getQValue(state, action) > best_qvalue):
+                    best_qvalue = self.getQValue(state, action)
+                    best_actions = []
+                    best_actions.append(action)
+                if (self.getQValue(state, action) == best_qvalue):
+                    best_actions.append(action)
 
-        # We save our qValues for our possible actions in the local qValue counter
-        for action in possibleActions:
-            qValues[action] = self.getQValue(state, action)
+        if (len(best_actions) > 1):
+            best_action = random.choice(best_actions)
+        if (len(best_actions) == 1):
+            best_action = best_actions[0]
 
-        # We pick the best actions, if multiple action have the same qValue then we pick random
-        bestActions = []
-        highestValue = qValues[qValues.argMax()]
-
-        # We save all the actions with the highestValue in bestActions
-        for action in qValues.keys():
-            if (qValues[action] == highestValue):
-                bestActions.append(action)
-
-        # We return one action, either the only one or a random
-        bestAction = None
-
-        if (len(bestActions) > 1):
-            bestAction = random.choice(bestActions)
-        if (len(bestActions) == 1):
-            bestAction = bestActions[0]
-
-        return bestAction
+        return best_action
 
 
 
@@ -162,28 +156,20 @@ class QLearningAgent(ReinforcementAgent):
           it will be called on your behalf
         """
         "*** YOUR CODE HERE ***"
+        qvalue_current = self.qvalue.get((state, action), None)
+        # print ("qvalue_current_before = " + str(qvalue_current))
+        # We haven't seen this state before
+        if (qvalue_current == None):
+            self.qvalue[(state, action)] = 0.0
+            qvalue_current = 0.0
+        # print ("qvalue_current = " + str(self.qvalue[(state, action)]))
 
-        stateAction = (state, action)
-        qvalue_current = self.qValue[stateAction]
+        qvalue_next = self.computeValueFromQValues(nextState)
+        # print ("qvalue_next = " + str(qvalue_next))
 
-        # Q-Learning - we take always take the action with the best q-value
-        qvalue_next_qlearning = self.computeValueFromQValues(nextState)
-
-        # SARSA - On-policy learning, we consider our policy (e-greedy) and we take that action and qvalue instead
-        stateAction = (nextState, self.getAction(nextState))
-        qvalue_next_sarsa = self.qValue[stateAction]
-
-        delta = reward + (self.gamma * qvalue_next_sarsa) - qvalue_current
-
-        self.eTrace[(state, action)] = self.eTrace[(state, action)] + 1
-
-        for (state,action) in self.qValue.keys():
-            self.qValue[(state, action)] = self.qValue[(state, action)] + self.alpha * delta * self.eTrace[(state,action)]
-            self.eTrace[(state, action)] = self.gamma * self.lamda * self.eTrace[(state, action)]
-
-        if (nextState == "TERMINAL STATE"):
-            self.eTrace.clear()
-
+        delta = reward + (self.gamma * qvalue_next) - qvalue_current
+        self.qvalue[(state, action)] = qvalue_current + self.alpha * delta
+        # print ("update = " + str(self.qvalue[(state, action)]))
 
     def getPolicy(self, state):
         return self.computeActionFromQValues(state)
@@ -250,25 +236,32 @@ class ApproximateQAgent(PacmanQAgent):
         qvalue = np.dot(self.weights, features)
         return qvalue
 
+    def computeValueFromQValues(self, state):
+        legalAction = self.getLegalActions(state)
+        best_qvalue = -999999
+        for action in legalAction:
+            qvalue = self.getQValue(state, action)
+            if (qvalue > best_qvalue):
+                best_qvalue = qvalue
+        if (best_qvalue == -999999):
+            best_qvalue = 0.0
+        return best_qvalue
+
 
     def update(self, state, action, nextState, reward):
         """
            Should update your weights based on transition
         """
-
-        if(reward != -1):
-            self.eTrace.clear()
-
-        qvalue_current = self.getQValue(state, action)
-        qvalue_next = self.computeValueFromQValues(nextState)
-
-        delta = reward + (self.gamma * qvalue_next) - qvalue_current
-
+        delta = reward + (self.gamma * self.computeValueFromQValues(nextState)) - self.getQValue(state, action)
         features = self.featExtractor.getFeatures(state, action)
         for key in features.keys():
-            self.eTrace[key] = self.lamda * self.eTrace[key] + features[key]
-            self.weights[key] = self.weights[key] + self.alpha * delta * self.eTrace[key]
-
+            value = features[key]
+            if(key == "#-of-ghosts-1-step-away"):
+                if (value != 0.0):
+                    print ("feature \t" + str(key) + "\t" + str(value))
+                    print ("current weights \t " + str(self.weights[key]))
+                    print ("updated weights \t " + str(self.weights[key] + self.alpha * delta * value) + "\n")
+            self.weights[key] = self.weights[key] + self.alpha * delta * value
 
 
     def final(self, state):

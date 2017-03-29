@@ -94,18 +94,19 @@ class SimpleExtractor(FeatureExtractor):
         if not features["#-of-ghosts-1-step-away"] and food[next_x][next_y]:
             features["eats-food"] = 1.0
 
-        # conf is only so that getPossibleActions(conf, walls) will get a conf.pos object
-        conf = Configuration((x + dx, y + dy), Directions.STOP)
-        possible_actions = Actions.getPossibleActions(conf, walls)
-        if (len(possible_actions) == 1):
-            features["dead-end"] = 1.0
-        else:
-            features["dead-end"] = 0.0
+        # # conf is only so that getPossibleActions(conf, walls) will get a conf.pos object
+        # conf = Configuration((x + dx, y + dy), Directions.STOP)
+        # possible_actions = Actions.getPossibleActions(conf, walls)
+        # if (len(possible_actions) == 1):
+        #     features["dead-end"] = 1.0
+        # else:
+        #     features["dead-end"] = 0.0
 
         dist = closestFood((next_x, next_y), food, walls)
         if dist is not None:
             # make the distance a number less than one otherwise the update
             # will diverge wildly
             features["closest-food"] = float(dist) / (walls.width * walls.height)
+
         features.divideAll(10.0)
         return features
