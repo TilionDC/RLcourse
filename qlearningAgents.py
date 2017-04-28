@@ -20,6 +20,8 @@ import numpy as np
 
 import random,util,math
 
+
+# Table Lookup implementation for Q-value
 class QLearningAgent(ReinforcementAgent):
     """
       Q-Learning Agent
@@ -193,6 +195,7 @@ class QLearningAgent(ReinforcementAgent):
         return self.computeValueFromQValues(state)
 
 
+# Table Lookup implementation (It just uses QLearningAgent)
 class PacmanQAgent(QLearningAgent):
     "Exactly the same as QLearningAgent, but with different default parameters"
 
@@ -225,6 +228,7 @@ class PacmanQAgent(QLearningAgent):
         return action
 
 
+# Feature Vector Implementation for Q-value
 class ApproximateQAgent(PacmanQAgent):
     """
        ApproximateQLearningAgent
@@ -282,3 +286,47 @@ class ApproximateQAgent(PacmanQAgent):
             # you might want to print your weights here for debugging
             "*** YOUR CODE HERE ***"
             pass
+
+
+# Neural Network Implementation for Q-value
+class NeuralQAgent(PacmanQAgent):
+    """
+       NeuralQAgent
+
+       You should only have to overwrite getQValue
+       and update.  All other QLearningAgent functions
+       should work as is.
+    """
+    def __init__(self, extractor='IdentityExtractor', **args):
+
+
+    def getWeights(self):
+
+
+    def getQValue(self, state, action):
+        """
+          Should return Q(state,action) from a neural network
+        """
+        "*** YOUR CODE HERE ***"
+
+
+
+    def update(self, state, action, nextState, reward):
+        """
+           Should update your weights (of the neural network) based on transition
+        """
+
+
+
+    def final(self, state):
+        "Called at the end of each game."
+        # call the super-class final method
+        PacmanQAgent.final(self, state)
+
+        # did we finish training?
+        if self.episodesSoFar == self.numTraining:
+            # you might want to print your weights here for debugging
+            "*** YOUR CODE HERE ***"
+            pass
+
+
